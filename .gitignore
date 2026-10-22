@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+tmp-preview
+.DS_Store
+*.log
+data/submissions.json
+data/uploads/*
+!data/uploads/.gitkeep
+.env
+.env.local
+.env.*.local
