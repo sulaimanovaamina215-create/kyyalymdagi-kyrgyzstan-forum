@@ -29,12 +29,6 @@ export function Hero() {
             <Link href="/opros" className="btn-brand inline-flex w-full items-center justify-center rounded-full px-5 py-3.5 text-sm font-semibold sm:w-auto">
               {t.hero.survey}
             </Link>
-            <Link
-              href="/register"
-              className="inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/10 sm:w-auto"
-            >
-              {t.hero.register}
-            </Link>
           </div>
           <ul className="mt-8 flex flex-wrap gap-2">
             {t.hero.topics.map((topic) => (
