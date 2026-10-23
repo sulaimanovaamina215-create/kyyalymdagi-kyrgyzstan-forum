@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
 import { isLang, messages } from "@/lib/i18n";
+import { sendForumEmail } from "@/lib/notify";
 import { parseSurvey } from "@/lib/survey";
 import { addSurvey, StoreError } from "@/lib/store";
-import { forumNotifyEmail } from "@/lib/google-survey";
 
 export const dynamic = "force-dynamic";
 
@@ -30,20 +29,9 @@ export async function POST(request: Request) {
   try {
     const entry = await addSurvey({ ...answers, id: crypto.randomUUID(), createdAt: new Date().toISOString() });
 
-    try {
-      const apiKey = process.env.RESEND_API_KEY?.trim();
-      const from = process.env.RESEND_FROM?.trim();
-      if (!apiKey) {
-        console.error("Resend аркылуу кат жөнөтүүдө ката чыкты: RESEND_API_KEY коюлган эмес");
-      } else if (!from) {
-        console.error("Resend аркылуу кат жөнөтүүдө ката чыкты: RESEND_FROM коюлган эмес");
-      } else {
-        const resend = new Resend(apiKey);
-        const { error } = await resend.emails.send({
-          from,
-          to: forumNotifyEmail,
-          subject: "Жаңы сурамжылоо жообу (jashtyk.kg)",
-          html: `
+    await sendForumEmail(
+      "Жаңы сурамжылоо жообу (jashtyk.kg)",
+      `
           <h2>jashtyk.kg сайтынан жаңы сурамжылоо түштү</h2>
           <p><strong>ID:</strong> ${entry.id}</p>
           <p><strong>Дата:</strong> ${entry.createdAt}</p>
@@ -58,12 +46,7 @@ export async function POST(request: Request) {
           <p><strong>Приоритеттер:</strong> ${entry.priorities.join(", ")} ${entry.prioritiesOther ? `(${entry.prioritiesOther})` : ""}</p>
           <p><strong>Сунуштар:</strong> ${entry.change}</p>
         `,
-        });
-        if (error) console.error("Resend аркылуу кат жөнөтүүдө ката чыкты:", error);
-      }
-    } catch (emailError) {
-      console.error("Resend аркылуу кат жөнөтүүдө ката чыкты:", emailError);
-    }
+    );
 
     return NextResponse.json({ id: entry.id }, { status: 201 });
   } catch (error) {

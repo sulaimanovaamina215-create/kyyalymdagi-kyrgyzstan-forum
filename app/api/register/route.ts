@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { readDelegationRequest } from "@/lib/delegation-request";
-import { pushDelegationToGoogle } from "@/lib/google-delegation";
+import { mailDelegation, pushDelegationToGoogle } from "@/lib/google-delegation";
 import { messages } from "@/lib/i18n";
 import { createDelegation, StoreError } from "@/lib/store";
 
@@ -19,13 +19,16 @@ export async function POST(request: Request) {
       participantCount: parsed.participants.length,
       consent: true,
     });
-    try {
-      const google = await pushDelegationToGoogle(entry);
-      if (!google.delivered) console.warn("delegation: Google не настроен, заявка сохранена только на сервере");
-      else if (!google.mailed) console.error("delegation: заявка записана в таблицу, письмо не ушло");
-    } catch (googleError) {
-      console.error("delegation google", googleError);
-    }
+    const mailed = mailDelegation(entry);
+    const synced = pushDelegationToGoogle(entry)
+      .then((google) => {
+        if (!google.delivered) console.warn("delegation: Google не настроен, заявка сохранена только на сервере");
+        else if (!google.mailed) console.error("delegation: заявка записана в таблицу, письмо не ушло");
+      })
+      .catch((googleError) => {
+        console.error("delegation google", googleError);
+      });
+    await Promise.all([mailed, synced]);
     return NextResponse.json(
       { code: entry.code, participantCount: entry.participantCount, editPath: `/register/${entry.code}` },
       { status: 201 },
