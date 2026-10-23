@@ -1,5 +1,5 @@
 /**
- * Кыялымдагы Кыргызстан — приём анкет в Google Sheets и письмо на почту.
+ * Кыялымдагы Кыргызстан — анкеты и регистрации делегаций: таблица и письмо.
  *
  * Куда вставить:
  * 1. Войдите в Google под Demilgefoundation@gmail.com.
@@ -14,7 +14,7 @@
  * 6. Скопируйте URL вида https://script.google.com/macros/s/.../exec
  *    в GOOGLE_SURVEY_WEBHOOK_URL на сервере сайта и перезапустите сайт.
  *
- * Письмо уходит с аккаунта, который развернул скрипт, на kyalymdagykyrgyzstanforum@gmail.com.
+ * Письма анкеты и регистрации делегации уходят на kyalymdagykyrgyzstanforum@gmail.com.
  */
 
 var NOTIFY_EMAIL = "kyalymdagykyrgyzstanforum@gmail.com";
@@ -36,6 +36,10 @@ var HEADERS = [
   "Открытый ответ",
 ];
 
+function doGet() {
+  return json_({ ok: true, service: "survey" });
+}
+
 function doPost(e) {
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
@@ -43,6 +47,7 @@ function doPost(e) {
     var body = JSON.parse(e.postData && e.postData.contents ? e.postData.contents : "{}");
     var expected = PropertiesService.getScriptProperties().getProperty("SURVEY_TOKEN");
     if (!expected || body.token !== expected) return json_({ ok: false, error: "unauthorized" });
+    if (body.kind === "delegation") return delegation_(body);
 
     var row = body.row || {};
     if (!row.id || !row.region || !row.change) return json_({ ok: false, error: "invalid" });
@@ -92,7 +97,7 @@ function doPost(e) {
       if (row.prioritiesOther) lines.push("Предложения, свой вариант: " + row.prioritiesOther);
       lines.push("Открытый ответ: " + row.change, "", "Таблица с результатами:", url, "", "Папка или таблица на Google Drive:", folder);
       MailApp.sendEmail({
-        to: body.notifyEmail || NOTIFY_EMAIL,
+        to: NOTIFY_EMAIL,
         subject: "Новый ответ опроса «Кыялымдагы Кыргызстан»",
         body: lines.join("\n"),
       });
@@ -117,11 +122,106 @@ function spreadsheet_() {
   return active;
 }
 
-function ensureHeader_(sheet) {
+var DELEGATION_HEADERS = [
+  "Код",
+  "Время",
+  "ФИО",
+  "Должность",
+  "Телефон",
+  "Email",
+  "Тип организации",
+  "Область",
+  "Район",
+  "Организация",
+  "Участников",
+  "Координирует",
+];
+
+var PARTICIPANT_HEADERS = ["Код делегации", "ФИО", "Возраст", "Пол", "Регион", "Район", "Организация"];
+
+function delegation_(body) {
+  var item = body.delegation || {};
+  if (!item.code || !item.fullName || !item.organizationName) return json_({ ok: false, error: "invalid" });
+
+  var ss = spreadsheet_();
+  var sheet = ss.getSheetByName("Делегации") || ss.insertSheet("Делегации");
+  ensureHeader_(sheet, DELEGATION_HEADERS);
+  var peopleSheet = ss.getSheetByName("Участники") || ss.insertSheet("Участники");
+  ensureHeader_(peopleSheet, PARTICIPANT_HEADERS);
+
+  var url = ss.getUrl();
+  var duplicate = sheet.getRange("A:A").createTextFinder(String(item.code)).matchEntireCell(true).findNext();
+  if (duplicate) return json_({ ok: true, duplicate: true, url: url, mailed: true });
+
+  sheet.appendRow([
+    item.code,
+    item.createdAt,
+    item.fullName,
+    item.position,
+    item.phone,
+    item.email,
+    item.organizationType,
+    item.region,
+    item.district,
+    item.organizationName,
+    item.participantCount,
+    item.willCoordinate,
+  ]);
+
+  var people = item.participants || [];
+  if (people.length) {
+    var values = [];
+    for (var i = 0; i < people.length; i++) {
+      var person = people[i] || {};
+      values.push([item.code, person.fullName, person.age, person.gender, person.region, person.district, person.organization]);
+    }
+    peopleSheet.getRange(peopleSheet.getLastRow() + 1, 1, values.length, PARTICIPANT_HEADERS.length).setValues(values);
+  }
+
+  var mailed = true;
+  try {
+    var lines = [
+      "Новая регистрация делегации «Кыялымдагы Кыргызстан».",
+      "",
+      "Регистрационный номер: " + item.code,
+      "Время: " + item.createdAt,
+      "ФИО: " + item.fullName,
+      "Должность: " + item.position,
+      "Телефон: " + item.phone,
+      "Email: " + item.email,
+      "Тип организации: " + item.organizationType,
+      "Область: " + item.region,
+      "Район: " + item.district,
+      "Организация: " + item.organizationName,
+      "Участников: " + item.participantCount,
+      "Координирует делегацию: " + item.willCoordinate,
+      "",
+      "Участники:",
+    ];
+    for (var n = 0; n < people.length; n++) {
+      var member = people[n] || {};
+      lines.push((n + 1) + ". " + member.fullName + ", " + member.age + ", " + member.gender + ", " + member.region + ", " + member.district + ", " + member.organization);
+    }
+    lines.push("", "Таблица:", url);
+    MailApp.sendEmail({
+      to: NOTIFY_EMAIL,
+      subject: "Новая делегация «Кыялымдагы Кыргызстан» — " + item.code,
+      body: lines.join("\n"),
+    });
+  } catch (mailError) {
+    mailed = false;
+    console.error(mailError);
+  }
+
+  return json_({ ok: true, url: url, mailed: mailed });
+}
+
+function ensureHeader_(sheet, headers) {
+  var row = headers || HEADERS;
   if (sheet.getLastRow() > 0) return;
-  sheet.appendRow(HEADERS);
+  sheet.appendRow(row);
   sheet.setFrozenRows(1);
-  sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight("bold");
+  sheet.getRange(1, 1, 1, row.length).setFontWeight("bold");
 }
 
 function json_(data) {

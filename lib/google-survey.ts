@@ -2,7 +2,8 @@ import { messages } from "@/lib/i18n";
 import { areaLabel } from "@/lib/regions";
 import type { SurveyEntry } from "@/lib/types";
 
-export const surveyNotifyEmail = "kyalymdagykyrgyzstanforum@gmail.com";
+export const forumNotifyEmail = "kyalymdagykyrgyzstanforum@gmail.com";
+export const surveyNotifyEmail = forumNotifyEmail;
 
 export type SurveySheetRow = {
   id: string;
@@ -49,16 +50,12 @@ export function googleSurveyConfigured() {
   return Boolean(process.env.GOOGLE_SURVEY_WEBHOOK_URL?.trim() && process.env.GOOGLE_SURVEY_TOKEN?.trim());
 }
 
-export async function pushSurveyToGoogle(entry: SurveyEntry) {
+export async function pushToGoogle(payload: Record<string, unknown>) {
   const url = process.env.GOOGLE_SURVEY_WEBHOOK_URL?.trim() ?? "";
   const token = process.env.GOOGLE_SURVEY_TOKEN?.trim() ?? "";
   if (!url || !token) return { delivered: false as const };
 
-  const response = await postAppsScript(url, {
-    token,
-    notifyEmail: surveyNotifyEmail,
-    row: surveySheetRow(entry),
-  });
+  const response = await postAppsScript(url, { token, ...payload });
   const text = await response.text();
   let data: { ok?: boolean; error?: string; url?: string; mailed?: boolean } = {};
   try {
@@ -72,6 +69,13 @@ export async function pushSurveyToGoogle(entry: SurveyEntry) {
   return { delivered: true as const, url: data.url ?? "", mailed: data.mailed !== false };
 }
 
+export async function pushSurveyToGoogle(entry: SurveyEntry) {
+  return pushToGoogle({
+    notifyEmail: forumNotifyEmail,
+    row: surveySheetRow(entry),
+  });
+}
+
 async function postAppsScript(url: string, payload: unknown) {
   const body = JSON.stringify(payload);
   const headers = { "Content-Type": "text/plain;charset=utf-8" };
@@ -82,10 +86,16 @@ async function postAppsScript(url: string, payload: unknown) {
     body,
     signal: AbortSignal.timeout(20000),
   });
+  if (first.ok) return first;
   if (first.status >= 300 && first.status < 400) {
     const location = first.headers.get("location");
     if (!location) throw new Error("google");
-    return fetch(new URL(location, url), { method: "GET", redirect: "follow", signal: AbortSignal.timeout(20000) });
+    return fetch(new URL(location, url), {
+      method: "GET",
+      redirect: "follow",
+      headers,
+      signal: AbortSignal.timeout(20000),
+    });
   }
-  return first;
+  throw new Error("google");
 }

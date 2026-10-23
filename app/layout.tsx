@@ -4,6 +4,7 @@ import { Manrope, Unbounded } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { forum } from "@/lib/content";
 import { isLang, type Lang } from "@/lib/i18n";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -23,9 +24,24 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: `${forum.name} — ${forum.title}`,
   description: forum.mission,
   icons: { icon: "/logo.png" },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
+  },
+  openGraph: {
+    type: "website",
+    locale: "ru_KG",
+    url: SITE_URL,
+    siteName: forum.name,
+    title: `${forum.name} — ${forum.title}`,
+    description: forum.mission,
+    images: [{ url: "/logo.png" }],
+  },
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
