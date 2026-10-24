@@ -244,4 +244,35 @@ img[src="/logo.png"] {
     transform: none;
   }
 
+  .voice-track {
+    animation: none;
+  }
+}
+
+.voice-marquee {
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, transparent, #000 10%, #000 90%, transparent);
+}
+
+.voice-marquee.is-static {
+  overflow: auto;
+  mask-image: none;
+}
+
+.voice-track {
+  animation: voice-scroll var(--voice-duration, 24s) linear infinite;
+}
+
+.voice-marquee:hover .voice-track,
+.voice-marquee:focus-within .voice-track {
+  animation-play-state: paused;
+}
+
+@keyframes voice-scroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
 }

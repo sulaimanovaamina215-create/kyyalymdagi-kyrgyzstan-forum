@@ -2,7 +2,7 @@ import { randomBytes } from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
 import { areas } from "@/lib/regions";
-import { summarizeSurvey } from "@/lib/survey";
+import { summarizeSurvey, type SurveyBreakdown } from "@/lib/survey";
 import type { Delegation, SurveyEntry } from "@/lib/types";
 
 type Store = {
@@ -11,6 +11,7 @@ type Store = {
 };
 
 const filePath = path.join(process.cwd(), "data", "submissions.json");
+const surveyPath = path.join(process.cwd(), "data", "survey.json");
 const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 function isDelegation(value: unknown): value is Delegation {
@@ -25,17 +26,63 @@ function isSurvey(value: unknown): value is SurveyEntry {
   return typeof item.id === "string" && typeof item.regionId === "string" && typeof item.change === "string";
 }
 
+function mergeSurvey(primary: SurveyEntry[], extra: SurveyEntry[]) {
+  const byId = new Map<string, SurveyEntry>();
+  for (const entry of extra) byId.set(entry.id, entry);
+  for (const entry of primary) byId.set(entry.id, entry);
+  return [...byId.values()];
+}
+
+async function readSurveyFile(file: string) {
+  try {
+    const raw = await fs.readFile(file, "utf8");
+    const parsed = JSON.parse(raw) as unknown;
+    const list = Array.isArray(parsed) ? parsed : parsed && typeof parsed === "object" && Array.isArray((parsed as Partial<Store>).survey) ? (parsed as Partial<Store>).survey : null;
+    if (!list) return "bad" as const;
+    return list.filter(isSurvey);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return "missing" as const;
+    return "bad" as const;
+  }
+}
+
+async function writeJson(file: string, value: unknown) {
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  const temp = `${file}.${process.pid}.tmp`;
+  await fs.writeFile(temp, JSON.stringify(value, null, 2), "utf8");
+  try {
+    await fs.rename(temp, file);
+  } catch {
+    await fs.copyFile(temp, file);
+    await fs.unlink(temp).catch(() => undefined);
+  }
+}
+
 async function readStore(): Promise<Store> {
+  let delegations: Delegation[] = [];
+  let survey: SurveyEntry[] = [];
+  let primaryMissing = false;
   try {
     const raw = await fs.readFile(filePath, "utf8");
     const parsed = JSON.parse(raw) as Partial<Store>;
-    return {
-      delegations: Array.isArray(parsed.delegations) ? parsed.delegations.filter(isDelegation) : [],
-      survey: Array.isArray(parsed.survey) ? parsed.survey.filter(isSurvey) : [],
-    };
-  } catch {
-    return { delegations: [], survey: [] };
+    if (!parsed || typeof parsed !== "object") throw new Error("store");
+    delegations = Array.isArray(parsed.delegations) ? parsed.delegations.filter(isDelegation) : [];
+    survey = Array.isArray(parsed.survey) ? parsed.survey.filter(isSurvey) : [];
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    primaryMissing = true;
   }
+
+  const backup = await readSurveyFile(surveyPath);
+  if (backup === "bad") {
+    if (primaryMissing) throw new Error("store");
+  } else if (Array.isArray(backup)) {
+    survey = mergeSurvey(survey, backup);
+  }
+  if (backup === "missing" && survey.length > 0) {
+    await writeJson(surveyPath, survey).catch(() => undefined);
+  }
+  return { delegations, survey };
 }
 
 let queue: Promise<unknown> = Promise.resolve();
@@ -45,8 +92,8 @@ function withStore<T>(mutator: (store: Store) => T, persist: boolean) {
     const store = await readStore();
     const result = mutator(store);
     if (persist) {
-      await fs.mkdir(path.dirname(filePath), { recursive: true });
-      await fs.writeFile(filePath, JSON.stringify(store, null, 2), "utf8");
+      await writeJson(surveyPath, store.survey);
+      await writeJson(filePath, store);
     }
     return result;
   });
@@ -69,6 +116,13 @@ export class StoreError extends Error {
     super(issue);
   }
 }
+
+export type StatsData = {
+  responses: number;
+  regions: { id: string; value: number }[];
+  breakdown: SurveyBreakdown;
+  byRegion: Record<string, SurveyBreakdown>;
+};
 
 export function getStats() {
   return withStore((store) => {

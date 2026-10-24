@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { LanguageSwitch, useI18n } from "@/components/language";
 import { Logo } from "@/components/logo";
+import { SurveyNav } from "@/components/survey-nav";
 import { forum } from "@/lib/content";
 
 export function Header() {
@@ -51,11 +52,15 @@ export function Header() {
 
           <div className="flex items-center gap-1.5 sm:gap-2">
             <nav className="mr-1 hidden items-center gap-4 lg:flex" aria-label={t.nav.about}>
-              {desktop.map((link) => (
-                <Link key={link.href} href={link.href} className="text-sm text-white/75 transition hover:text-white">
-                  {link.label}
-                </Link>
-              ))}
+              {desktop.map((link) =>
+                link.href === "/opros" ? (
+                  <SurveyNav key={link.href} />
+                ) : (
+                  <Link key={link.href} href={link.href} className="text-sm text-white/75 transition hover:text-white">
+                    {link.label}
+                  </Link>
+                ),
+              )}
             </nav>
             <LanguageSwitch />
             <button
@@ -75,16 +80,20 @@ export function Header() {
             className="min-h-[calc(100dvh-4rem-env(safe-area-inset-top))] overflow-y-auto border-t border-white/10 bg-ink px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden"
             aria-label={t.nav.about}
           >
-            {mobile.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="block rounded-2xl px-3 py-3.5 text-base text-white/90 active:bg-white/10"
-                onClick={() => setMenu(false)}
-              >
-                {link.label}
-              </Link>
-            ))}
+            {mobile.map((link) =>
+              link.href === "/opros" ? (
+                <SurveyNav key={link.href} mobile onNavigate={() => setMenu(false)} />
+              ) : (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="block rounded-2xl px-3 py-3.5 text-base text-white/90 active:bg-white/10"
+                  onClick={() => setMenu(false)}
+                >
+                  {link.label}
+                </Link>
+              ),
+            )}
           </nav>
         ) : null}
       </header>

@@ -15,7 +15,7 @@ export function Hero() {
       <div className="hero-spot-cyan pointer-events-none absolute -right-28 top-4 h-[42rem] w-[42rem] rounded-full blur-[160px]" />
       <div className="hero-spot-green pointer-events-none absolute -bottom-32 left-[20%] h-[36rem] w-[42rem] rounded-full blur-[160px]" />
 
-      <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-4 pb-12 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:gap-12 lg:pb-28">
+      <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-4 pb-8 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:gap-10 lg:pb-10">
         <div>
           <p className="inline-flex rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/75">
             {t.hero.place} · {t.hero.dates}

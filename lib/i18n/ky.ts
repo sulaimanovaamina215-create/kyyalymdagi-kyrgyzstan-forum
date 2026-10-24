@@ -89,6 +89,11 @@ export const ky: Messages = {
     lower: "төмөн",
     higher: "жогору",
     mapLabel: "Кыргызстандын аймактары боюнча активдүүлүк картасы",
+    voices: "Жаштардын ойлору",
+    hideVoices: "Жоопторду жашыруу",
+    voicesNote: "Анкетанын акыркы суроосуна жазылган анонимдүү жооптор.",
+    voicesEmpty: "Азырынча эч ким жаза элек.",
+    voicesOf: "{shown} / {total}",
     tabs: {
       topics: "Эң маанилүү темалар",
       barriers: "Эмне тоскоол",

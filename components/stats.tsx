@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { SectionHeading } from "@/components/section-heading";
+import { Voices } from "@/components/voices";
 import { KyrgyzstanMap } from "@/components/kyrgyzstan-map";
 import { useI18n } from "@/components/language";
 import { STATS_EVENT } from "@/components/survey-form";
 import { areaLabel, areas } from "@/lib/regions";
 import { emptyBreakdown, type SurveyBreakdown } from "@/lib/survey";
+import type { StatsData } from "@/lib/store";
 import { ageIds, barrierIds, employmentIds, genderIds, localityIds, priorityIds, topicIds } from "@/lib/types";
 
 type RegionStat = { id: string; name: string; value: number };
@@ -25,12 +27,20 @@ const questionIds = {
 
 const genderColors = { female: "#00f2fe", male: "#ff6b00", undisclosed: "#7f00ff" };
 
-export function Stats() {
+function regionStats(data: StatsData, lang: "ru" | "ky"): RegionStat[] {
+  return areas.map((area) => ({
+    id: area.id,
+    name: areaLabel(area.id, lang),
+    value: data.regions.find((item) => item.id === area.id)?.value ?? 0,
+  }));
+}
+
+export function Stats({ initial }: { initial: StatsData }) {
   const { lang, t } = useI18n();
-  const [responses, setResponses] = useState(0);
-  const [regions, setRegions] = useState<RegionStat[]>(() => areas.map((area) => ({ id: area.id, name: areaLabel(area.id, lang), value: 0 })));
-  const [breakdown, setBreakdown] = useState<SurveyBreakdown>(emptyBreakdown);
-  const [byRegion, setByRegion] = useState<Record<string, SurveyBreakdown>>({});
+  const [responses, setResponses] = useState(initial.responses);
+  const [regions, setRegions] = useState<RegionStat[]>(() => regionStats(initial, lang));
+  const [breakdown, setBreakdown] = useState<SurveyBreakdown>(initial.breakdown);
+  const [byRegion, setByRegion] = useState<Record<string, SurveyBreakdown>>(initial.byRegion);
   const [activeId, setActiveId] = useState("");
   const [question, setQuestion] = useState<QuestionKey>("topics");
   const [expanded, setExpanded] = useState(false);
@@ -49,11 +59,11 @@ export function Stats() {
         };
         if (ignore) return;
         setResponses(data.responses);
-        setRegions(areas.map((area) => ({ id: area.id, name: areaLabel(area.id, lang), value: data.regions.find((item) => item.id === area.id)?.value ?? 0 })));
+        setRegions(regionStats(data, lang));
         setBreakdown(data.breakdown);
         setByRegion(data.byRegion);
       } catch {
-        // The map stays at zero if the API is unreachable.
+        // Keep the last saved totals if the refresh fails.
       }
     }
     load();
@@ -76,10 +86,10 @@ export function Stats() {
   const selected = questions.includes(question) ? question : "topics";
 
   return (
-    <section id="stats" className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-28">
+    <section id="stats" className="mx-auto max-w-6xl px-4 pb-14 pt-4 sm:px-6 sm:pb-24 sm:pt-6">
       <SectionHeading eyebrow={t.stats.eyebrow} title={t.stats.title} text={t.stats.text} />
 
-      <div className="mt-12 grid items-start gap-6 lg:grid-cols-[0.85fr_1.15fr]">
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[0.85fr_1.15fr]">
         <div className="glass rounded-[28px] p-6 sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/45">{t.stats.surveyed}</p>
           <Counter value={total} />
@@ -133,6 +143,8 @@ export function Stats() {
           </li>
         ))}
       </ul>
+
+      <Voices />
 
       <div className="mt-8 grid items-start gap-6 lg:grid-cols-[1.25fr_0.75fr]">
         <article className="glass rounded-[28px] p-6 sm:p-8">
@@ -255,38 +267,29 @@ function ShareBar({ label, percent: value }: { label: string; percent: number })
 }
 
 function Counter({ value }: { value: number }) {
-  const [shown, setShown] = useState(0);
-  const ref = useRef<HTMLParagraphElement>(null);
-  const seen = useRef(false);
+  const [shown, setShown] = useState(value);
+  const fromRef = useRef(value);
+  const frame = useRef(0);
 
   useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting || seen.current) return;
-        seen.current = true;
-        const start = performance.now();
-        const tick = (now: number) => {
-          const progress = Math.min(1, (now - start) / 1200);
-          const eased = 1 - (1 - progress) ** 3;
-          setShown(Math.round(value * eased));
-          if (progress < 1) requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-      },
-      { threshold: 0.5 },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [value]);
-
-  useEffect(() => {
-    if (seen.current) setShown(value);
+    const from = fromRef.current;
+    if (from === value) return;
+    cancelAnimationFrame(frame.current);
+    const start = performance.now();
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - start) / 700);
+      const eased = 1 - (1 - progress) ** 3;
+      const next = Math.round(from + (value - from) * eased);
+      setShown(next);
+      if (progress < 1) frame.current = requestAnimationFrame(tick);
+      else fromRef.current = value;
+    };
+    frame.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame.current);
   }, [value]);
 
   return (
-    <p ref={ref} className="mt-3 font-display text-5xl font-semibold tabular-nums text-white drop-shadow-[0_0_28px_rgba(0,242,254,0.6)] sm:text-7xl">
+    <p className="mt-3 font-display text-5xl font-semibold tabular-nums text-white drop-shadow-[0_0_28px_rgba(0,242,254,0.6)] sm:text-7xl">
       {shown.toLocaleString("ru-RU")}
     </p>
   );

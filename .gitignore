@@ -5,6 +5,7 @@ tmp-preview
 .DS_Store
 *.log
 data/submissions.json
+data/survey.json
 data/uploads/*
 !data/uploads/.gitkeep
 .env

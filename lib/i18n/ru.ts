@@ -87,6 +87,11 @@ export const ru = {
     lower: "ниже",
     higher: "выше",
     mapLabel: "Карта активности по регионам Кыргызстана",
+    voices: "Открытые ответы",
+    hideVoices: "Скрыть ответы",
+    voicesNote: "Анонимные ответы на последний вопрос анкеты.",
+    voicesEmpty: "Пока никто не написал.",
+    voicesOf: "{shown} из {total}",
     tabs: {
       topics: "Важные темы",
       barriers: "Что мешает",
