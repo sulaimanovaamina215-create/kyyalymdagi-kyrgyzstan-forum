@@ -1,16 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { LanguageSwitch, useI18n } from "@/components/language";
 import { Logo } from "@/components/logo";
+import { ProgramModal } from "@/components/program-modal";
 import { SurveyNav } from "@/components/survey-nav";
 import { forum } from "@/lib/content";
 
 export function Header() {
   const { t } = useI18n();
   const [menu, setMenu] = useState(false);
+  const [program, setProgram] = useState(false);
+  const closeProgram = useCallback(() => setProgram(false), []);
   const desktop = [
     { href: "/#about", label: t.nav.about },
     { href: "/#program", label: t.nav.program },
@@ -27,13 +30,13 @@ export function Header() {
   ];
 
   useEffect(() => {
-    if (!menu) return;
+    if (!menu && !program) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = previous;
     };
-  }, [menu]);
+  }, [menu, program]);
 
   return (
     <>
@@ -55,6 +58,17 @@ export function Header() {
               {desktop.map((link) =>
                 link.href === "/opros" ? (
                   <SurveyNav key={link.href} />
+                ) : link.href === "/#program" ? (
+                  <button
+                    key={link.href}
+                    type="button"
+                    className="text-sm text-white/75 transition hover:text-white"
+                    aria-expanded={program}
+                    aria-haspopup="dialog"
+                    onClick={() => setProgram(true)}
+                  >
+                    {link.label}
+                  </button>
                 ) : (
                   <Link key={link.href} href={link.href} className="text-sm text-white/75 transition hover:text-white">
                     {link.label}
@@ -83,6 +97,20 @@ export function Header() {
             {mobile.map((link) =>
               link.href === "/opros" ? (
                 <SurveyNav key={link.href} mobile onNavigate={() => setMenu(false)} />
+              ) : link.href === "/#program" ? (
+                <button
+                  key={link.href}
+                  type="button"
+                  className="block w-full rounded-2xl px-3 py-3.5 text-left text-base text-white/90 active:bg-white/10"
+                  aria-expanded={program}
+                  aria-haspopup="dialog"
+                  onClick={() => {
+                    setMenu(false);
+                    setProgram(true);
+                  }}
+                >
+                  {link.label}
+                </button>
               ) : (
                 <Link
                   key={link.href}
@@ -97,6 +125,7 @@ export function Header() {
           </nav>
         ) : null}
       </header>
+      {program ? <ProgramModal onClose={closeProgram} /> : null}
     </>
   );
 }

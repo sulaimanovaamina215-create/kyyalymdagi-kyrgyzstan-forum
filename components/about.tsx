@@ -1,13 +1,17 @@
 "use client";
 
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { useContent } from "@/components/content-provider";
 import { useI18n } from "@/components/language";
+import { ProgramCopy } from "@/components/program-copy";
 import { Reveal } from "@/components/reveal";
 import { SectionHeading } from "@/components/section-heading";
 
 export function About() {
   const { t, text } = useI18n();
   const content = useContent();
+  const [programOpen, setProgramOpen] = useState(true);
 
   return (
     <>
@@ -31,16 +35,23 @@ export function About() {
       </section>
 
       <section id="program" className="program-bg mx-auto max-w-6xl px-4 pb-14 sm:px-6 sm:pb-28">
-        <h2 className="font-display text-3xl font-semibold sm:text-4xl">{t.about.program}</h2>
-        <ol className="mt-8 grid gap-4 lg:grid-cols-3">
-          {content.program.map((item) => (
-            <li key={item.id} className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-              <p className="text-sm font-semibold text-aqua">{text(item.day)}</p>
-              <p className="mt-3 font-display text-2xl">{text(item.title)}</p>
-              <p className="mt-3 text-sm leading-relaxed text-white/65">{text(item.text)}</p>
-            </li>
-          ))}
-        </ol>
+        <h2>
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-4 text-left"
+            aria-expanded={programOpen}
+            aria-controls="program-panel"
+            onClick={() => setProgramOpen((open) => !open)}
+          >
+            <span className="font-display text-3xl font-semibold sm:text-4xl">{t.about.program}</span>
+            <ChevronDown className={`shrink-0 transition ${programOpen ? "rotate-180" : ""}`} size={28} aria-hidden />
+          </button>
+        </h2>
+        {programOpen ? (
+          <div id="program-panel" className="program-sheet mt-8 overflow-hidden rounded-[28px]">
+            <ProgramCopy />
+          </div>
+        ) : null}
       </section>
     </>
   );

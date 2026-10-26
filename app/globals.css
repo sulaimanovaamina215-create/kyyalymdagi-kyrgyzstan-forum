@@ -130,6 +130,46 @@ img[src="/logo.png"] {
   z-index: 1;
 }
 
+.program-sheet {
+  position: relative;
+  isolation: isolate;
+  background-color: #140826;
+  background-image: radial-gradient(ellipse 32rem 26rem at 50% 46%, rgba(88, 28, 150, 0.55), transparent 72%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+}
+
+.program-sheet::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 0;
+  width: min(22rem, 70%);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  background: url("/logo.png") center / contain no-repeat;
+  opacity: 0.28;
+  mix-blend-mode: screen;
+}
+
+.program-sheet > * {
+  position: relative;
+  z-index: 1;
+  padding: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .program-sheet::before {
+    width: min(34rem, 62%);
+  }
+
+  .program-sheet > * {
+    padding: 2rem;
+  }
+}
+
 .footer-bg {
   position: relative;
 }
