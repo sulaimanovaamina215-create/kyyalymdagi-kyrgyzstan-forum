@@ -28,7 +28,7 @@ const ru = {
   showText: "Музыкальные выступления и финальная композиция «Салым».",
   poll: "НАЦИОНАЛЬНЫЙ ОПРОС МОЛОДЕЖИ",
   pollBefore: "В рамках подготовки к форуму проходит Национальный опрос молодежи на платформе ",
-  pollSite: "www.jashtyk.org",
+  pollSite: "https://jashtyk.kg/",
   pollAfter:
     ". Молодые кыргызстанцы могут поделиться мнением о будущем страны, своих приоритетах и ожиданиях. Пройти опрос можно независимо от участия в форуме. Опрос не является регистрацией на мероприятие.",
   tagline: "Кыялымдагы Кыргызстан сенден башталат",
@@ -57,7 +57,7 @@ const ky = {
   showText: "Музыкалык чыгуулар жана «Салым» финалдык композициясы.",
   poll: "ЖАШТАРДЫН УЛУТТУК СУРАМЖЫЛООСУ",
   pollBefore: "Форумга даярдыктын алкагында Жаштардын улуттук сурамжылоосу ",
-  pollSite: "www.jashtyk.org",
+  pollSite: "https://jashtyk.kg/",
   pollAfter:
     " платформасында жүрүп жатат. Жаш кыргызстандыктар өлкөнүн келечеги, өз артыкчылыктары жана күтүүлөрү жөнүндө пикирлери менен бөлүшө алышат. Сурамжылоону форумга катышуудан көз карандысыз өтсө болот. Сурамжылоо иш-чарага катталуу болуп саналбайт.",
   tagline: "Кыялымдагы Кыргызстан сенден башталат",
@@ -112,13 +112,13 @@ export function ProgramCopy() {
         <Label>{copy.poll}</Label>
         <p className="leading-relaxed text-white/80">
           {copy.pollBefore}
-          <a href="https://www.jashtyk.org" className="text-aqua underline decoration-aqua/40 underline-offset-2" target="_blank" rel="noreferrer">
+          <a href="https://jashtyk.kg/" className="text-aqua underline decoration-aqua/40 underline-offset-2" target="_blank" rel="noreferrer">
             {copy.pollSite}
           </a>
           {copy.pollAfter}
         </p>
-        <a href="https://www.jashtyk.org" className="inline-block text-sm font-semibold text-aqua" target="_blank" rel="noreferrer">
-          {copy.pollSite}
+        <a href="https://jashtyk.kg/" className="inline-block text-sm font-semibold text-aqua" target="_blank" rel="noreferrer">
+          https://jashtyk.kg/
         </a>
         <p className="font-display text-lg text-white">{copy.tagline}</p>
       </section>
