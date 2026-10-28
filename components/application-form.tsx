@@ -46,8 +46,9 @@ export function ApplicationForm() {
         body: JSON.stringify({ lang, fullName: parsed.value.fullName, phone: parsed.value.phone, letter: parsed.value.letter, company }),
       });
       const data = (await response.json()) as { error?: string; relay?: boolean };
-      if (!response.ok) throw new Error(data.error || t.errors.network);
-      if (data.relay) await deliverToInbox(parsed.value, t.errors.applyActivate, t.errors.applyMail);
+      const mailRefused = data.error === t.errors.applyMail || data.error === t.errors.applySetup;
+      if (!response.ok && !mailRefused) throw new Error(data.error || t.errors.network);
+      if (data.relay || mailRefused) await deliverToInbox(parsed.value, t.errors.applyActivate, t.errors.applyMail);
       setDone(true);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : t.errors.network);
