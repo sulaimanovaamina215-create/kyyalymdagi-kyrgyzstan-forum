@@ -30,20 +30,18 @@ export async function sendApplicationNotice(application: Application): Promise<A
           words: countWords(application.letter),
         },
       });
-      return google.delivered && google.mailed ? "sent" : "failed";
+      if (google.delivered && google.mailed) return "sent";
     } catch (error) {
       console.error("Заявка Google почтасы аркылуу кеткен жок:", error);
-      return "failed";
     }
   }
 
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = process.env.RESEND_FROM?.trim();
-  if (!apiKey || !from) {
-    console.error("Заявка почтага кеткен жок: GOOGLE_SURVEY_WEBHOOK_URL жана RESEND_API_KEY коюлган эмес");
-    return "unconfigured";
+  if (apiKey && from) {
+    const sent = await deliverForumEmail(`Новая заявка: ${subjectName}`, applicationHtml(application));
+    if (sent) return "sent";
   }
 
-  const sent = await deliverForumEmail(`Новая заявка: ${subjectName}`, applicationHtml(application));
-  return sent ? "sent" : "failed";
+  return "unconfigured";
 }
