@@ -14,7 +14,7 @@
  * 6. Скопируйте URL вида https://script.google.com/macros/s/.../exec
  *    в GOOGLE_SURVEY_WEBHOOK_URL на сервере сайта и перезапустите сайт.
  *
- * Письма анкеты и регистрации делегации уходят на kyalymdagykyrgyzstanforum@gmail.com.
+ * Письма анкеты, делегации и заявки на участие уходят на kyalymdagykyrgyzstanforum@gmail.com.
  */
 
 var NOTIFY_EMAIL = "kyalymdagykyrgyzstanforum@gmail.com";
@@ -48,6 +48,7 @@ function doPost(e) {
     var expected = PropertiesService.getScriptProperties().getProperty("SURVEY_TOKEN");
     if (!expected || body.token !== expected) return json_({ ok: false, error: "unauthorized" });
     if (body.kind === "delegation") return delegation_(body);
+    if (body.kind === "application") return application_(body);
 
     var row = body.row || {};
     if (!row.id || !row.region || !row.change) return json_({ ok: false, error: "invalid" });
@@ -138,6 +139,37 @@ var DELEGATION_HEADERS = [
 ];
 
 var PARTICIPANT_HEADERS = ["Код делегации", "ФИО", "Возраст", "Пол", "Регион", "Район", "Организация"];
+
+function application_(body) {
+  var item = body.application || {};
+  var fullName = String(item.fullName || "").trim();
+  var phone = String(item.phone || "").trim();
+  var letter = String(item.letter || "").trim();
+  if (!fullName || !phone || !letter) return json_({ ok: false, error: "invalid" });
+
+  var mailed = true;
+  try {
+    MailApp.sendEmail({
+      to: NOTIFY_EMAIL,
+      subject: "Новая заявка: " + fullName.slice(0, 80),
+      body: [
+        "Новая заявка на участие «Кыялымдагы Кыргызстан».",
+        "",
+        "ФИО: " + fullName,
+        "WhatsApp: " + phone,
+        "Слов: " + String(item.words || ""),
+        "",
+        "Мотивационное письмо:",
+        letter,
+      ].join("\n"),
+    });
+  } catch (mailError) {
+    mailed = false;
+    console.error(mailError);
+  }
+
+  return json_({ ok: true, mailed: mailed });
+}
 
 function delegation_(body) {
   var item = body.delegation || {};

@@ -20,6 +20,7 @@ export function Header() {
     { href: "/#news", label: t.nav.news },
     { href: "/#archive", label: t.nav.archive },
     { href: "/opros", label: t.nav.survey },
+    { href: "/zayavka", label: t.nav.registerShort },
   ];
   const mobile = [
     ...desktop.slice(0, 2),
